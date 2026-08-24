@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Control Panel</title>
+    <style>
+        :root {
+            --bg-color: #0b1120;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-blue: #3b82f6;
+            --accent-amber: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #1e293b;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 16px 14px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 1200px;
+        }
+        header {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #1e293b;
+        }
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .title-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        h1 {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: -0.3px;
+        }
+        .header-url-link {
+            font-size: 13px;
+            font-weight: 700;
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            padding: 3px 9px;
+            border-radius: 6px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+        .header-url-link:hover {
+            background: rgba(239, 68, 68, 0.25);
+            border-color: rgba(239, 68, 68, 0.8);
+            color: #fca5a5;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.35);
+            transform: translateY(-1px);
+        }
+        .badge-bar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-active { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .badge-disabled { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge-gray { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
+
+        .search-box {
+            width: 100%;
+        }
+        .search-input {
+            width: 100%;
+            padding: 10px 14px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            color: #f8fafc;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .search-input:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+        }
+        
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin: 20px 0 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 10px;
+        }
+        @media (max-width: 650px) {
+            body {
+                padding: 10px 8px;
+            }
+            .grid {
+                grid-template-columns: 1fr !important;
+            }
+            .header-top {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+        .mcp-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            transition: all 0.2s ease;
+        }
+        .mcp-card:hover {
+            border-color: #475569;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-1px);
+        }
+        .mcp-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow: hidden;
+        }
+        .mcp-name {
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+        }
+        .mcp-title-link {
+            color: var(--text-main);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: color 0.15s ease;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .mcp-title-link:hover {
+            color: #38bdf8;
+            text-decoration: underline;
+        }
+        .ext-icon {
+            font-size: 11px;
+            opacity: 0.7;
+            flex-shrink: 0;
+        }
+        .mcp-cmd {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: ui-monospace, monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .update-tag {
+            font-size: 10px;
+            padding: 1px 5px;
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            border-radius: 4px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .mcp-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .btn-update {
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: background 0.15s ease;
+        }
+        .btn-update:hover {
+            background: #1d4ed8;
+        }
+        .btn-update:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 38px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #475569;
+            transition: .25s;
+            border-radius: 20px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .25s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--accent-green); }
+        input:checked + .slider:before { transform: translateX(18px); }
+
+        .empty-msg {
+            font-size: 12px;
+            color: var(--text-muted);
+            padding: 12px 0;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <div class="title-group">
+                    <h1>🔌 MCP Control Panel</h1>
+                    <a href="http://localhost:7890" target="_blank" rel="noopener noreferrer" class="header-url-link" onclick="openExternalUrl('http://localhost:7890', event)" title="Открыть панель в браузере: http://localhost:7890">
+                        localhost:7890 ↗
+                    </a>
+                </div>
+                <div class="badge-bar">
+                    <span id="activeCount" class="badge badge-active">🟢 0 Ready</span>
+                    <span id="disabledCount" class="badge badge-disabled">🔴 0 Disabled</span>
+                    <span id="totalCount" class="badge badge-gray">⚪ 0 Всего</span>
+                </div>
+            </div>
+
+            <div class="search-box">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    class="search-input" 
+                    placeholder="Поиск MCP сервера по названию или команде..." 
+                    oninput="filterConfig()"
+                >
+            </div>
+        </header>
+
+        <div class="section-title">
+            <span>ВКЛЮЧЕННЫЕ МСР</span>
+            <span id="secActiveCount" style="font-size:12px; font-weight:normal;">(0)</span>
+        </div>
+        <div id="activeList" class="grid"></div>
+
+        <div class="section-title">
+            <span>ОТКЛЮЧЕННЫЕ МСР</span>
+            <span id="secDisabledCount" style="font-size:12px; font-weight:normal;">(0)</span>
+        </div>
+        <div id="disabledList" class="grid"></div>
+    </div>
+
+    <script>
+        let globalData = { mcpServers: {}, disabledMcpServers: {}, repoUrls: {} };
+        let updateData = {};
+        let updatingServers = new Set();
+
+        function openExternalUrl(url, e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            if (window.parent && window.parent !== window) {
+                try {
+                    window.parent.postMessage({ type: 'openExternal', url: url }, '*');
+                } catch(err) {}
+            }
+            fetch('/api/open-url?url=' + encodeURIComponent(url)).catch(() => {});
+        }
+
+        async function loadConfig() {
+            const res = await fetch('/api/mcp');
+            globalData = await res.json();
+            filterConfig();
+            checkUpdates();
+        }
+
+        async function checkUpdates() {
+            try {
+                const res = await fetch('/api/mcp/check-updates');
+                const data = await res.json();
+                if (data.updates) {
+                    updateData = data.updates;
+                    filterConfig();
+                }
+            } catch (e) {
+                console.error('Update check failed:', e);
+            }
+        }
+
+        function filterConfig() {
+            const query = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+            const active = globalData.mcpServers || {};
+            const disabled = globalData.disabledMcpServers || {};
+
+            const activeEntries = Object.entries(active).filter(([name, cfg]) => 
+                !query || name.toLowerCase().includes(query) || (cfg.command && cfg.command.toLowerCase().includes(query))
+            );
+
+            const disabledEntries = Object.entries(disabled).filter(([name, cfg]) => 
+                !query || name.toLowerCase().includes(query) || (cfg.command && cfg.command.toLowerCase().includes(query))
+            );
+
+            document.getElementById('activeCount').innerText = '🟢 ' + Object.keys(active).length + ' Ready';
+            document.getElementById('disabledCount').innerText = '🔴 ' + Object.keys(disabled).length + ' Disabled';
+            document.getElementById('totalCount').innerText = '⚪ ' + (Object.keys(active).length + Object.keys(disabled).length) + ' Всего';
+
+            document.getElementById('secActiveCount').innerText = '(' + activeEntries.length + ')';
+            document.getElementById('secDisabledCount').innerText = '(' + disabledEntries.length + ')';
+
+            renderGrid('activeList', activeEntries, true);
+            renderGrid('disabledList', disabledEntries, false);
+        }
+
+        function renderGrid(containerId, entries, isActive) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            if (entries.length === 0) {
+                container.innerHTML = '<div class="empty-msg">Ничего не найдено</div>';
+                return;
+            }
+
+            entries.forEach(([name, cfg]) => {
+                const card = document.createElement('div');
+                card.className = 'mcp-card';
+
+                const upInfo = updateData[name];
+                const isUpdating = updatingServers.has(name);
+                const hasUpdate = Boolean(upInfo && upInfo.hasUpdate === true);
+
+                // Кнопка "Обновить" отображается ТОЛЬКО когда доступно обновление
+                const updateBtnHtml = hasUpdate ? 
+                    '<button class="btn-update" ' + (isUpdating ? 'disabled' : '') + ' onclick="updateServer(\'' + name + '\')">' +
+                        (isUpdating ? '↻...' : '⚡ Обновить') +
+                    '</button>' : '';
+
+                let tagHtml = '';
+                if (hasUpdate && upInfo.latestVersion) {
+                    tagHtml = '<span class="update-tag" title="Доступна новая версия: ' + upInfo.latestVersion + ' (текущая: ' + (upInfo.localVersion || 'старая') + ')">' +
+                        '⚡ ' + (upInfo.localVersion ? 'v' + upInfo.localVersion + ' ➔ ' : '') + 'v' + upInfo.latestVersion +
+                    '</span>';
+                } else if (upInfo && upInfo.localVersion && upInfo.localVersion !== 'latest') {
+                    tagHtml = '<span class="version-tag" style="font-size:11px; opacity:0.6; margin-left:6px; color:var(--text-muted);">v' + upInfo.localVersion + '</span>';
+                }
+
+                const repoUrl = (upInfo && upInfo.repoUrl) || (globalData.repoUrls && globalData.repoUrls[name]);
+                const titleHtml = repoUrl ? 
+                    '<a href="' + repoUrl + '" target="_blank" rel="noopener noreferrer" class="mcp-title-link" onclick="openExternalUrl(\'' + repoUrl + '\', event)" title="Открыть страницу / репозиторий: ' + repoUrl + '">' +
+                        '<span>' + name + '</span>' +
+                        '<span class="ext-icon">↗</span>' +
+                    '</a>' : '<span>' + name + '</span>';
+
+                card.innerHTML = 
+                    '<div class="mcp-info">' +
+                        '<div class="mcp-name">' +
+                            titleHtml + ' ' + tagHtml +
+                        '</div>' +
+                        '<div class="mcp-cmd" title="' + (cfg.command || 'npx') + '">' + (cfg.command || 'npx') + '</div>' +
+                    '</div>' +
+                    '<div class="mcp-actions">' +
+                        updateBtnHtml +
+                        '<label class="switch">' +
+                            '<input type="checkbox" ' + (isActive ? 'checked' : '') + ' onchange="toggleServer(\'' + name + '\')">' +
+                            '<span class="slider"></span>' +
+                        '</label>' +
+                    '</div>';
+                container.appendChild(card);
+            });
+        }
+
+        async function updateServer(serverName) {
+            updatingServers.add(serverName);
+            filterConfig();
+            try {
+                await fetch('/api/mcp/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ serverName })
+                });
+            } catch (e) {
+                console.error('Update failed:', e);
+            } finally {
+                updatingServers.delete(serverName);
+                loadConfig();
+            }
+        }
+
+        async function toggleServer(serverName) {
+            await fetch('/api/mcp/toggle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ serverName })
+            });
+            loadConfig();
+        }
+
+        loadConfig();
+    </script>
+</body>
+</html>

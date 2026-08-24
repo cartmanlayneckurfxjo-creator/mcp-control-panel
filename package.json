@@ -1,0 +1,39 @@
+{
+  "name": "mcp-control-panel",
+  "version": "1.1.0",
+  "description": "Interactive Web Control Panel and Manager for Model Context Protocol (MCP) servers across Claude Desktop, Cursor, and Antigravity IDE",
+  "main": "src/server.mjs",
+  "type": "module",
+  "bin": {
+    "mcp-control-panel": "./bin/mcp-panel.mjs",
+    "mcp-panel": "./bin/mcp-panel.mjs"
+  },
+  "scripts": {
+    "start": "node bin/mcp-panel.mjs",
+    "dev": "node bin/mcp-panel.mjs --no-open"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "claude-desktop",
+    "cursor",
+    "antigravity",
+    "ai-agents",
+    "llm-tools",
+    "mcp-servers",
+    "control-panel"
+  ],
+  "author": "cartmanlayneckurfxjo-creator",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cartmanlayneckurfxjo-creator/mcp-control-panel.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cartmanlayneckurfxjo-creator/mcp-control-panel/issues"
+  },
+  "homepage": "https://github.com/cartmanlayneckurfxjo-creator/mcp-control-panel#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
