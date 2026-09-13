@@ -296,6 +296,86 @@
             padding: 12px 0;
             font-style: italic;
         }
+
+        .service-panel {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(51, 65, 85, 0.75);
+            border-radius: 6px;
+            padding: 5px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: flex-start;
+            flex-shrink: 0;
+        }
+        .service-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #cbd5e1;
+        }
+        .service-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-svc {
+            border: none;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            text-decoration: none;
+            transition: all 0.15s ease;
+        }
+        .btn-start {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.35);
+        }
+        .btn-start:hover {
+            background: rgba(16, 185, 129, 0.3);
+        }
+        .btn-stop {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+        }
+        .btn-stop:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+        .btn-url {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.35);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+        .btn-url:hover {
+            background: rgba(59, 130, 246, 0.3);
+            color: #93c5fd;
+        }
+        .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .dot-green {
+            background: var(--accent-green);
+            box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+        }
+        .dot-red {
+            background: var(--accent-red);
+            box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+        }
+
     </style>
 </head>
 <body>
@@ -440,6 +520,33 @@
                         '<span class="ext-icon">↗</span>' +
                     '</a>' : '<span>' + name + '</span>';
 
+                const svc = globalData.services && globalData.services[name];
+                let serviceHtml = '';
+                if (svc) {
+                    const isRunning = Boolean(svc.isRunning);
+                    const statusDot = '<span class="dot ' + (isRunning ? 'dot-green' : 'dot-red') + '"></span>';
+                    const statusText = isRunning ? 'Сервис запущен' : 'Сервис остановлен';
+                    const portText = svc.port ? ' (порт ' + svc.port + ')' : '';
+                    const actionBtn = isRunning ? 
+                        '<button class="btn-svc btn-stop" onclick="stopMcpService(\'' + name + '\', ' + svc.port + ', this)" title="Остановить сервис">⏹ Стоп</button>' :
+                        '<button class="btn-svc btn-start" onclick="startMcpService(\'' + name + '\', this)" title="Запустить сервис">▶ Пуск</button>';
+                    const urlBtn = svc.url ? 
+                        '<a href="' + svc.url + '" target="_blank" rel="noopener noreferrer" class="btn-svc btn-url" onclick="openExternalUrl(\'' + svc.url + '\', event)" title="Открыть: ' + svc.url + '">' +
+                            '🔗 ' + svc.url +
+                        '</a>' : '';
+
+                    serviceHtml = 
+                        '<div class="service-panel">' +
+                            '<div class="service-status">' +
+                                statusDot + ' <span>' + statusText + portText + '</span>' +
+                            '</div>' +
+                            '<div class="service-actions">' +
+                                actionBtn +
+                                urlBtn +
+                            '</div>' +
+                        '</div>';
+                }
+
                 card.innerHTML = 
                     '<div class="mcp-info">' +
                         '<div class="mcp-name">' +
@@ -448,6 +555,7 @@
                         '<div class="mcp-cmd" title="' + (cfg.command || 'npx') + '">' + (cfg.command || 'npx') + '</div>' +
                     '</div>' +
                     '<div class="mcp-actions">' +
+                        serviceHtml +
                         updateBtnHtml +
                         '<label class="switch">' +
                             '<input type="checkbox" ' + (isActive ? 'checked' : '') + ' onchange="toggleServer(\'' + name + '\')">' +
@@ -485,6 +593,38 @@
         }
 
         loadConfig();
+
+        async function startMcpService(serverName, btn) {
+            if (btn) btn.innerText = '⏳...';
+            try {
+                await fetch('/api/mcp/service/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ serverName })
+                });
+            } catch (e) {
+                console.error('Failed to start service:', e);
+            }
+            setTimeout(loadConfig, 1200);
+            setTimeout(loadConfig, 3000);
+            setTimeout(loadConfig, 5000);
+        }
+
+        async function stopMcpService(serverName, port, btn) {
+            if (btn) btn.innerText = '⏳...';
+            try {
+                await fetch('/api/mcp/service/stop', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ serverName, port })
+                });
+            } catch (e) {
+                console.error('Failed to stop service:', e);
+            }
+            setTimeout(loadConfig, 1000);
+            setTimeout(loadConfig, 2500);
+        }
+
     </script>
 </body>
 </html>

@@ -1,7 +1,8 @@
-import http from 'http';
+﻿import http from 'http';
 import https from 'https';
 import fs from 'fs';
 import path from 'path';
+import net from 'net';
 import { exec, execSync } from 'child_process';
 
 const CONFIG_PATH = fs.existsSync('C:/Users/may/.gemini/antigravity-ide/mcp_config.json') 
@@ -14,6 +15,39 @@ const PORT = 7890;
 
 const updateCache = new Map();
 const CACHE_TTL = 3600000; // 1 hour
+
+const serviceProcesses = new Map();
+
+const MCP_SERVICES = {
+  'agentmemory': {
+    name: 'agentmemory',
+    port: 3113,
+    startCmd: 'npx -y @agentmemory/agentmemory',
+    url: 'http://127.0.0.1:3113'
+  }
+};
+
+function checkPort(port) {
+  return new Promise((resolve) => {
+    if (!port) return resolve(false);
+    const socket = new net.Socket();
+    socket.setTimeout(350);
+    socket.on('connect', () => {
+      socket.destroy();
+      resolve(true);
+    });
+    socket.on('timeout', () => {
+      socket.destroy();
+      resolve(false);
+    });
+    socket.on('error', () => {
+      socket.destroy();
+      resolve(false);
+    });
+    socket.connect(port, '127.0.0.1');
+  });
+}
+
 
 function readConfig() {
   const content = fs.readFileSync(CONFIG_PATH, 'utf-8');
@@ -216,7 +250,7 @@ function fetchLatestPyPiVersion(pkg) {
   });
 }
 
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -256,14 +290,25 @@ const server = http.createServer((req, res) => {
       const allServers = { ...(config.mcpServers || {}), ...(config.disabledMcpServers || {}) };
       const repoUrls = {};
 
+      const services = {};
       for (const [name, cfg] of Object.entries(allServers)) {
         const pkgInfo = extractPackageInfo(name, cfg);
         const url = resolveRepoUrl(pkgInfo);
         if (url) repoUrls[name] = url;
+
+        if (MCP_SERVICES[name]) {
+          const svc = MCP_SERVICES[name];
+          const isRunning = await checkPort(svc.port);
+          services[name] = {
+            port: svc.port,
+            url: svc.url,
+            isRunning: isRunning
+          };
+        }
       }
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ...config, repoUrls }));
+      res.end(JSON.stringify({ ...config, repoUrls, services }));
     } catch (e) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: e.message }));
@@ -429,6 +474,88 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.url === '/api/mcp/service/start' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', async () => {
+      try {
+        const { serverName } = JSON.parse(body);
+        const svc = MCP_SERVICES[serverName];
+        if (!svc) throw new Error('No service configured for ' + serverName);
+
+        const isRunning = await checkPort(svc.port);
+        if (isRunning) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, message: 'Already running' }));
+          return;
+        }
+
+        const proc = exec(svc.startCmd, { windowsHide: true });
+        serviceProcesses.set(serverName, proc);
+
+        proc.on('exit', () => serviceProcesses.delete(serverName));
+        proc.on('error', () => serviceProcesses.delete(serverName));
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true }));
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
+  if (req.url === '/api/mcp/service/stop' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', async () => {
+      try {
+        const { serverName, port } = JSON.parse(body);
+        const svc = MCP_SERVICES[serverName];
+        const targetPort = port || (svc ? svc.port : null);
+
+        if (serviceProcesses.has(serverName)) {
+          const proc = serviceProcesses.get(serverName);
+          try {
+            if (process.platform === 'win32' && proc.pid) {
+              execSync('taskkill /PID ' + proc.pid + ' /T /F');
+            } else {
+              proc.kill('SIGTERM');
+            }
+          } catch(err) {}
+          serviceProcesses.delete(serverName);
+        }
+
+        const portsToKill = serverName === 'agentmemory' ? [3111, 3112, 3113] : (targetPort ? [targetPort] : []);
+        if (process.platform === 'win32') {
+          for (const p of portsToKill) {
+            try {
+              const out = execSync('netstat -ano | findstr :' + p, { encoding: 'utf-8' });
+              const lines = out.split('\n');
+              for (const line of lines) {
+                if (line.includes('LISTENING')) {
+                  const parts = line.trim().split(/\s+/);
+                  const pid = parts[parts.length - 1];
+                  if (pid && !isNaN(pid)) {
+                    execSync('taskkill /PID ' + pid + ' /T /F');
+                  }
+                }
+              }
+            } catch(err) {}
+          }
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true }));
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
   // Serve Dashboard HTML
   if (req.url === '/' || req.url === '/index.html') {
     const html = fs.readFileSync('C:/Users/may/.gemini/antigravity/scratch/mcp_panel.html', 'utf-8');
@@ -446,3 +573,6 @@ server.listen(PORT, () => {
   console.log('🚀 MCP Control Panel Live at: http://localhost:' + PORT);
   console.log('=================================================\n');
 });
+
+
+
